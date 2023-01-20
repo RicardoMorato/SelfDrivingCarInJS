@@ -1,5 +1,5 @@
 class Car {
-  constructor(xOffset, yOffset, width, height) {
+  constructor(xOffset, yOffset, width, height, controlsType, maxSpeed = 3) {
     this.xOffset = xOffset;
     this.yOffset = yOffset;
     this.width = width;
@@ -7,7 +7,7 @@ class Car {
 
     this.speed = 0;
     this.acceleration = 0.2;
-    this.maxSpeed = 3;
+    this.maxSpeed = maxSpeed;
     this.maxReverseSpeed = -this.maxSpeed / 2;
     this.friction = 0.05;
     this.angle = 0;
@@ -15,8 +15,11 @@ class Car {
     this.polygon = this.#createPolygon();
     this.damage = false;
 
-    this.controls = new Controls();
-    this.sensor = new Sensor(this);
+    this.controls = new Controls(controlsType);
+
+    if (controlsType === controlsTypes.keyboardListener) {
+      this.sensor = new Sensor(this);
+    }
   }
 
   #createPolygon() {
@@ -45,11 +48,16 @@ class Car {
     return points;
   }
 
-  #assessDamage(roadBorders) {
+  #assessDamage(roadBorders, traffic) {
     let hasCarBeenDamaged = false;
 
     roadBorders.forEach((roadBoard) => {
       if (polysIntersect(this.polygon, roadBoard)) hasCarBeenDamaged = true;
+    });
+
+    traffic.forEach((trafficBlock) => {
+      if (polysIntersect(this.polygon, trafficBlock.polygon))
+        hasCarBeenDamaged = true;
     });
 
     return hasCarBeenDamaged;
@@ -89,19 +97,21 @@ class Car {
     this.yOffset -= Math.cos(this.angle) * this.speed;
   }
 
-  update(roadBorders) {
+  update(roadBorders, traffic) {
     if (!this.damage) {
       this.#move();
       this.polygon = this.#createPolygon();
-      this.damage = this.#assessDamage(roadBorders);
+      this.damage = this.#assessDamage(roadBorders, traffic);
     }
 
-    this.sensor.update(roadBorders);
+    if (this.sensor) {
+      this.sensor.update(roadBorders, traffic);
+    }
   }
 
-  draw(ctx) {
+  draw(ctx, nonDamagedColor) {
     if (this.damage) ctx.fillStyle = "gray";
-    else ctx.fillStyle = "black";
+    else ctx.fillStyle = nonDamagedColor;
 
     ctx.beginPath();
 
@@ -111,6 +121,8 @@ class Car {
     }
     ctx.fill();
 
-    this.sensor.draw(ctx);
+    if (this.sensor) {
+      this.sensor.draw(ctx);
+    }
   }
 }

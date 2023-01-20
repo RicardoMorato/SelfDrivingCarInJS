@@ -30,8 +30,8 @@ class Sensor {
     }
   }
 
-  #getReading(ray, roadBorders) {
-    const borderTouches = [];
+  #getReading(ray, roadBorders, traffic) {
+    const touches = [];
 
     roadBorders.forEach((border) => {
       const { touch, hasIntersection } = getIntersection(
@@ -41,27 +41,40 @@ class Sensor {
         border[1]
       );
 
-      if (hasIntersection) borderTouches.push(touch);
+      if (hasIntersection) touches.push(touch);
     });
 
-    if (!borderTouches.length) return null;
+    traffic.forEach((trafficBlock) => {
+      const poly = trafficBlock.polygon;
+
+      for (let i = 0; i < poly.length; i++) {
+        const { touch, hasIntersection } = getIntersection(
+          ray[0],
+          ray[1],
+          poly[i],
+          poly[(i + 1) % poly.length]
+        );
+
+        if (hasIntersection) touches.push(touch);
+      }
+    });
+
+    if (!touches.length) return null;
     else {
-      const offsets = borderTouches.map((borderTouch) => borderTouch.offset);
+      const offsets = touches.map((borderTouch) => borderTouch.offset);
       const minOffset = Math.min(...offsets);
 
-      return borderTouches.find(
-        (borderTouch) => borderTouch.offset === minOffset
-      );
+      return touches.find((borderTouch) => borderTouch.offset === minOffset);
     }
   }
 
-  update(roadBorders) {
+  update(roadBorders, traffic) {
     this.#castRays();
 
     this.readings = [];
 
     this.rays.forEach((ray) =>
-      this.readings.push(this.#getReading(ray, roadBorders))
+      this.readings.push(this.#getReading(ray, roadBorders, traffic))
     );
   }
 

@@ -1,5 +1,5 @@
 class Controls {
-  constructor() {
+  constructor(type) {
     this.forward = false;
     this.left = false;
     this.right = false;
@@ -11,7 +11,14 @@ class Controls {
       ArrowDown: (boolean) => (this.reverse = boolean),
     };
 
-    this.#addKeyboardListeners();
+    switch (type) {
+      case controlsTypes.keyboardListener:
+        this.#addKeyboardListeners();
+        break;
+      case controlsTypes.trafficObstacle:
+        this.forward = true;
+        break;
+    }
   }
 
   #addKeyboardListeners() {

@@ -1,3 +1,8 @@
+const controlsTypes = {
+  keyboardListener: "keyboardListener",
+  trafficObstacle: "trafficObstacle",
+};
+
 // Also known as Linear Interpolation
 // https://en.wikipedia.org/wiki/Linear_interpolation
 function lerp(pointA, pointB, t) {
