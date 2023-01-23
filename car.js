@@ -17,8 +17,11 @@ class Car {
 
     this.controls = new Controls(controlsType);
 
-    if (controlsType === controlsTypes.keyboardListener) {
+    this.useBrain = controlsType === controlsTypes.aiController;
+
+    if (controlsType !== controlsTypes.trafficObstacle) {
       this.sensor = new Sensor(this);
+      this.brain = new NeuralNetwork([this.sensor.rayCount, 6, 4]);
     }
   }
 
@@ -106,10 +109,22 @@ class Car {
 
     if (this.sensor) {
       this.sensor.update(roadBorders, traffic);
+      const offsets = this.sensor.readings.map((sensorReading) =>
+        sensorReading === null ? 0 : 1 - sensorReading.offset
+      );
+
+      const outputs = NeuralNetwork.feedForward(offsets, this.brain);
+
+      if (this.useBrain) {
+        this.controls.forward = Boolean(outputs[0]);
+        this.controls.left = Boolean(outputs[1]);
+        this.controls.right = Boolean(outputs[2]);
+        this.controls.reverse = Boolean(outputs[3]);
+      }
     }
   }
 
-  draw(ctx, nonDamagedColor) {
+  draw(ctx, nonDamagedColor, drawSensor = false) {
     if (this.damage) ctx.fillStyle = "gray";
     else ctx.fillStyle = nonDamagedColor;
 
@@ -121,7 +136,7 @@ class Car {
     }
     ctx.fill();
 
-    if (this.sensor) {
+    if (this.sensor && drawSensor) {
       this.sensor.draw(ctx);
     }
   }
